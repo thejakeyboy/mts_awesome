@@ -1,7 +1,7 @@
 require 'yaml'
 
 $n = 3
-$m = 12
+$m = 10
 $C = "CONSTANT"
 
 class Var
@@ -16,7 +16,7 @@ class Var
     @name = name
     @index = index
     @state = state
-    @id = (@@varids[self.to_s] || @@curid += 1)
+    @id = @@varids[self.to_s] || @@curid += 1
     @@varids[self.to_s] = @id
     @@s_to_var[self.to_s] = self
   end
@@ -60,6 +60,13 @@ class Var
 end
 
 class State < Array
+  
+  def shiftzero
+    newstate = clone
+    min = newstate.min
+    newstate.each_with_index{|v,i| newstate[i] = v-min}
+    newstate
+  end
   def initialize(arg)
     super(arg)
   end
@@ -105,8 +112,8 @@ class State < Array
 
 end
 
-class Equation < Hash
 
+class Equation < Hash
 
   attr_accessor :constant
 
@@ -131,9 +138,10 @@ class Equation < Hash
     map do |var,coeff|
       coeff.to_s + " " + var.get_name
     end.join(" + ") + " #{@RELATION} #{@constant.to_s}"
-  end
-  
+  end  
+
 end
+
 
 class Ineq < Equation
   def initialize
@@ -152,16 +160,16 @@ def cvar
 end
 
 def move_inequality state, ind
-  eq = Ineq.new
-  nextstate = state.next ind
-  phi =Var.new('phi', state)
-  phinext = Var.new('phi', nextstate)
-  p_i = Var.new('p', state, ind)
-  p_inext = Var.new('p', nextstate,ind)
+  eq = Eqlty.new
+  nextstate = state.next(ind) # w + 1/m e_i
+  phi =Var.new('phi', state) # Phi(w)
+  phinext = Var.new('phi', nextstate) # Phi(w + 1/m e_i)
+  p_i = Var.new('p', state, ind) # p_i(w)
+  p_inext = Var.new('p', nextstate,ind) # p_i(w + 1/m e_i)
   eq.set -1.0, phinext
   eq.set 1.0, phi
   eq.set 1.0, p_i
-  eq.set((-1.0 + 1.0/$m), p_inext)
+  eq.set((-1.0 + 1.0/$m), p_inext) 
   eq.constant = 0.0
   return eq
 end
@@ -175,6 +183,7 @@ def boundary_equality state,ind
 end
 
 def shift_inequality state
+  # Phi boundary inequality
   eq = Eqlty.new
   shiftedstate = state.shiftdown
   phi = Var.new('phi',state)
@@ -209,6 +218,23 @@ def probability_inequalities state
   end
   sumeq.constant = 1.0
   eqs << sumeq
+end
+
+def plot x,y
+  Gnuplot.open do |gp|
+    Gnuplot::Plot.new( gp ) do |plot|
+
+      plot.title  "Array Plot Example"
+      plot.ylabel "x"
+      plot.xlabel "x^2"
+      
+      plot.data << Gnuplot::DataSet.new( [x, y] ) do |ds|
+        ds.with = "linespoints"
+        ds.notitle
+      end
+    end
+  end
+  
 end
 
 eqlist = []
