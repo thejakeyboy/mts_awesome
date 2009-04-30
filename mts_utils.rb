@@ -56,3 +56,22 @@ def plot(y)
   end
 end
 
+def feed_to_lp_solve objective, eqlist
+  test = IO.popen("lp_solve",'r+')
+  test.puts objective
+  eqlist.each do |eq|
+    test.puts eq.to_lpformat + ";"
+  end
+  test.close_write
+
+  4.times {test.gets}
+  final = {}
+  while line = test.gets
+    var_s, val_s = line.split(" ")
+    var,val = Var.get_var(var_s), val_s.to_f
+    final[var.to_s] = val
+    puts "#{val}\t#{var}" if var.eql? cvar
+  end
+  test.close
+  return final
+end
