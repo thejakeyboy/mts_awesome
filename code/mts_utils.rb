@@ -56,6 +56,23 @@ def plot(y)
   end
 end
 
+def plot(y)
+  x = (0...(y.length)).to_a
+  Gnuplot.open do |gp|
+    Gnuplot::Plot.new( gp ) do |plot|
+
+      plot.title  "Array Plot Example"
+      plot.ylabel "x"
+      plot.xlabel "x^2"
+      
+      plot.data << Gnuplot::DataSet.new( [x, y] ) do |ds|
+        ds.with = "linespoints"
+        ds.notitle
+      end
+    end
+  end
+end
+
 def feed_to_lp_solve objective, eqlist
   test = IO.popen("lp_solve",'r+')
   test.puts objective
